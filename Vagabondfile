@@ -1,0 +1,16 @@
+{
+  :nodes=> {
+    :beaver => {
+      :template => "ubuntu_1204", 
+      :run_list => []
+    }
+  },
+  :local_chef_server => {
+    :zero=>false, 
+    :berkshelf=>false, 
+    :librarian => true,
+    :enabled=>true, 
+    :auto_upload=>true
+  },
+  :sudo => 'rvmsudo'
+}
