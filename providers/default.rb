@@ -42,12 +42,14 @@ action :create do
 
   # Ensure user/group exists
 
-  group new_resource.group
-  user new_resource.user do
+  if(new_resource.manage_user)
     group new_resource.group
-    shell '/bin/false'
-    home basedir
-    comment 'Beaver user - #{new_resource.name}'
+    user new_resource.user do
+      group new_resource.group
+      shell '/bin/false'
+      home basedir
+      comment "Beaver user - #{new_resource.name}"
+    end
   end
 
   # Ensure all directories exist
@@ -83,6 +85,7 @@ action :create do
       source "upstart.conf.erb"
       variables(
         :cmd => cmd,
+        :name => new_resource.name,
         :group => new_resource.group,
         :user => new_resource.user,
         :basedir => basedir,
@@ -94,7 +97,9 @@ action :create do
     custom_provider = Chef::Provider::Service::Upstart
     custom_service_name = "beaver-#{new_resource.name}"
   when 'runit'
-    runit_service "beaver_#{new_resource.name}" do
+    run_context.include_recipe 'runit'
+    
+    runit_service "beaver-#{new_resource.name}" do
       default_logger true
       run_template_name 'beaver'
       cookbook 'beaver'
@@ -104,6 +109,7 @@ action :create do
         :user => new_resource.user
       )
     end
+    custom_service_name = "beaver-#{new_resource.name}"
   else
     template "/etc/init.d/beaver_#{new_resource.name}" do
       cookbook 'beaver'
@@ -121,8 +127,12 @@ action :create do
   end
 
   service_resource = service "beaver_#{new_resource.name}" do
-    service_name custom_service_name if custom_service_name
-    provider custom_provider if custom_provider
+    if(custom_service_name)
+      service_name custom_service_name
+    end
+    if(custom_provider)
+      provider custom_provider
+    end
     supports :restart => false, :reload => false, :status => true
     action [:enable, :start]
   end
