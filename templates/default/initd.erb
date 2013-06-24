@@ -5,10 +5,10 @@
 #
 # chkconfig:   - 57 47
 # description: Log Sender provided by beaver
-# processname: beaver_<%= @name %>
+# processname: <%= @name %>
 <% else -%>
 ### BEGIN INIT INFO
-# Provides:          beaver_<%= @name %>
+# Provides:          <%= @name %>
 # Required-Start:    $local_fs $remote_fs $network
 # Required-Stop:     $local_fs $remote_fs $network
 # Default-Start:     2 3 4 5
@@ -19,7 +19,7 @@
 <% end -%>
 
 
-BEAVER_NAME='beaver_<%= @name %>'
+BEAVER_NAME='<%= @name %>'
 BEAVER_CMD='<%= @cmd %>'
 BEAVER_PID='<%= @pid_file %>'
 BEAVER_USER='<%= @user %>'

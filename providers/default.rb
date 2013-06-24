@@ -26,14 +26,15 @@ action :create do
   run_context.include_recipe 'beaver'
 
   # Build out our paths
-  
+
   basedir = ::File.join(new_resource.base_dir, new_resource.name)
+  service_name = "beaver-#{new_resource.name}"
   conf_file = ::File.join(basedir, 'etc/beaver.conf')
-  log_file = ::File.join(new_resource.log_dir, "beaver_#{new_resource.name}.log")
-  pid_file = ::File.join(new_resource.pid_dir, "beaver_#{new_resource.name}.pid")
+  log_file = ::File.join(new_resource.log_dir, "#{service_name}.log")
+  pid_file = ::File.join(new_resource.pid_dir, "#{service_name}.pid")
 
   # Cache our attributes so we can easily pass them through
-  
+
   new_args = Mash.new.tap do |mash|
     %w(user group output files).each do |key|
       mash[key] = new_resource.send(key)
@@ -43,17 +44,18 @@ action :create do
   # Ensure user/group exists
 
   if(new_resource.manage_user)
+    comment_s = "Beaver user - #{new_resource.name}"
     group new_resource.group
     user new_resource.user do
       group new_resource.group
       shell '/bin/false'
       home basedir
-      comment "Beaver user - #{new_resource.name}"
+      comment comment_s
     end
   end
 
   # Ensure all directories exist
-  
+
   [conf_file, pid_file, log_file].each do |leaf|
     directory ::File.dirname(leaf) do
       recursive true
@@ -61,7 +63,7 @@ action :create do
       group new_resource.group
     end
   end
-  
+
   template conf_file do
     cookbook 'beaver'
     source 'beaver.conf.erb'
@@ -72,34 +74,34 @@ action :create do
       :conf => new_resource.output.values.first,
       :files => new_resource.files
     )
-    notifies :restart, "service[beaver_#{new_resource.name}]"
+    notifies :restart, "service[#{service_name}]"
   end
 
   cmd = "beaver -t #{new_resource.output.keys.first} -c #{conf_file}"
 
   case new_resource.init_type
   when 'upstart'
-    template "/etc/init/beaver-#{new_resource.name}.conf" do
+    template "/etc/init/#{service_name}.conf" do
       mode "0644"
       cookbook 'beaver'
       source "upstart.conf.erb"
       variables(
         :cmd => cmd,
-        :name => new_resource.name,
+        :name => service_name,
         :group => new_resource.group,
         :user => new_resource.user,
         :basedir => basedir,
         :log => log_file
       )
-      notifies :restart, "service[beaver_#{new_resource.name}]"
+      notifies :restart, "service[#{service_name}]"
     end
 
     custom_provider = Chef::Provider::Service::Upstart
-    custom_service_name = "beaver-#{new_resource.name}"
+    custom_service_name = service_name
   when 'runit'
     run_context.include_recipe 'runit'
-    
-    runit_service "beaver-#{new_resource.name}" do
+
+    runit_service service_name do
       default_logger true
       run_template_name 'beaver'
       cookbook 'beaver'
@@ -109,24 +111,24 @@ action :create do
         :user => new_resource.user
       )
     end
-    custom_service_name = "beaver-#{new_resource.name}"
+    custom_service_name = service_name
   else
-    template "/etc/init.d/beaver_#{new_resource.name}" do
+    template "/etc/init.d/#{service_name}" do
       cookbook 'beaver'
       mode 0755
       source 'initd.erb'
       variables(
-        :name => new_resource.name,
+        :name => service_name,
         :cmd => cmd,
         :pid_file => pid_file,
         :user => new_resource.user,
         :log => log_file
       )
-      notifies :restart, "service[beaver_#{new_resource.name}]"
+      notifies :restart, "service[#{service_name}]"
     end
   end
 
-  service_resource = service "beaver_#{new_resource.name}" do
+  service_resource = service service_name do
     if(custom_service_name)
       service_name custom_service_name
     end
@@ -137,7 +139,7 @@ action :create do
     action [:enable, :start]
   end
 
-  logrotate_app "beaver_#{new_resource.name}" do
+  logrotate_app service_name do
     cookbook 'logrotate'
     path log_file
     frequency 'daily'
