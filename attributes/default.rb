@@ -1,4 +1,4 @@
-default[:beaver][:pip_package] = 'beaver==29'
+default[:beaver][:pip_package] = 'beaver==22'
 default[:beaver][:server_ipaddress] = nil
 default[:beaver][:inputs] = []
 default[:beaver][:outputs] = []
