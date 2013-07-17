@@ -74,7 +74,7 @@ action :create do
       :conf => new_resource.output.values.first,
       :files => new_resource.files
     )
-    notifies :restart, "service[#{service_name}]"
+    notifies :restart, "service[#{service_name}]", :immediately
   end
 
   cmd = "beaver -t #{new_resource.output.keys.first} -c #{conf_file}"
