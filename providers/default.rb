@@ -2,7 +2,7 @@ def load_current_resource
   %w(init_type user group).each do |key|
     new_resource.send(key, node[:beaver][key]) unless new_resource.send(key)
   end
-  
+
   case new_resource.files
   when String
     new_resource.files [Mash.new(:path => new_resource.files)]
@@ -64,6 +64,14 @@ action :create do
     end
   end
 
+  # ideally we want to restart the service immediately on config
+  # change but this can only happen if the service script exists
+
+  service_exists = lambda do |service|
+    output = %x{service #{service} status 2>&1}
+    output.include?('unrecognized') ? :delayed : :immediately
+  end
+
   template conf_file do
     cookbook 'beaver'
     source 'beaver.conf.erb'
@@ -74,7 +82,7 @@ action :create do
       :conf => new_resource.output.values.first,
       :files => new_resource.files
     )
-    notifies :restart, "service[#{service_name}]", :immediately
+    notifies :restart, "service[#{service_name}]", service_exists.call(service_name)
   end
 
   cmd = "beaver -t #{new_resource.output.keys.first} -c #{conf_file}"
