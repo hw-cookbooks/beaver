@@ -120,6 +120,23 @@ action :create do
       )
     end
     custom_service_name = service_name
+  when 'rc_mon'
+    run_context.include_recipe 'rc_mon'
+
+    rc_mon service_name do
+      run_template_name 'beaver'
+      cookbook 'beaver'
+      options(
+        :cmd => cmd,
+        :group => new_resource.group,
+        :user => new_resource.user
+      )
+      %w(memory_limit swap_limit cpu_shares).each do |key|
+        if(new_resource.send(key))
+          self.send(key, new_resource.send(key))
+        end
+      end
+    end
   else
     template "/etc/init.d/#{service_name}" do
       cookbook 'beaver'

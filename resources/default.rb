@@ -13,3 +13,6 @@ attribute :init_type, :kind_of => String
 attribute :user, :kind_of => String
 attribute :group, :kind_of => String
 attribute :manage_user, :kind_of => [TrueClass,FalseClass], :default => true
+attribute :memory_limit
+attribute :swap_limit
+attribute :cpu_shares
