@@ -29,6 +29,7 @@ action :create do
 
   basedir = ::File.join(new_resource.base_dir, new_resource.name)
   service_name = "beaver-#{new_resource.name}"
+  service_action = [:enable, :start]
   conf_file = ::File.join(basedir, 'etc/beaver.conf')
   log_file = ::File.join(new_resource.log_dir, "#{service_name}.log")
   pid_file = ::File.join(new_resource.pid_dir, "#{service_name}.pid")
@@ -120,6 +121,8 @@ action :create do
       )
     end
     custom_service_name = service_name
+    custom_provider = Chef::Provider::Service::Init
+    service_action = :start
   else
     template "/etc/init.d/#{service_name}" do
       cookbook 'beaver'
@@ -134,6 +137,8 @@ action :create do
       )
       notifies :restart, "service[#{service_name}]"
     end
+    custom_provider = Chef::Provider::Service::Init
+    service_action = :start
   end
 
   service_resource = service service_name do
@@ -144,7 +149,7 @@ action :create do
       provider custom_provider
     end
     supports :restart => false, :reload => false, :status => true
-    action [:enable, :start]
+    action service_action
   end
 
   logrotate_app service_name do
